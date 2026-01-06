@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package author;
+
+option go_package = "proto/authorpb";
+
+service AuthorService{
+    rpc BecomeAuthor (BecomeAuthorRequest) returns (AuthorResponse);
+    rpc ValidateAuthor (ValidateAuthorRequest) returns (ValidateAuthorResponse);
+}
+
+message BecomeAuthorRequest{
+    uint64 user_id = 1;
+}
+
+message AuthorResponse{
+    uint64 id = 1;
+    uint64 user_id = 2;
+}
+
+message ValidateAuthorRequest{
+    uint64 user_id = 1;
+}
+
+message ValidateAuthorResponse{
+    bool is_author = 1;
+}
