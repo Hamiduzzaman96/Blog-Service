@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package notification;
+
+option go_package = "proto/notificationpb";
+
+service NotificationService{
+    rpc SendNotification (NotificationRequest) returns (NotificationResponse);
+}
+
+message NotificationRequest {
+    uint64 user_id = 1;
+    string message = 2;
+}
+
+message NotificationResponse{
+    bool success = 1;
+}
