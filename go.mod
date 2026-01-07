@@ -3,6 +3,7 @@ module github.com/Hamiduzzaman96/Blog-Service
 go 1.25.5
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
