@@ -25,7 +25,7 @@ type BlogModel struct {
 }
 
 type NotificationModel struct {
-	ID      string `gorm:"primarykey; autoIncrement"`
+	ID      uint   `gorm:"primarykey; autoIncrement"`
 	UserID  uint   `gorm:"not null"`
 	Message string `gorm:"type:text"`
 	Sent    bool
