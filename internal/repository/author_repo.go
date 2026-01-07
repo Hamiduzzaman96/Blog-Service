@@ -17,6 +17,8 @@ func (r *AuthorRepository) Migrate() error {
 	return r.db.AutoMigrate(&AuthorModel{})
 }
 
+// MAPPERS
+
 func authorModelToDomain(m *AuthorModel) *domain.Author {
 	return &domain.Author{
 		ID:     m.ID,
@@ -30,6 +32,8 @@ func authorDomainToModel(a *domain.Author) *AuthorModel {
 		UserID: a.UserID,
 	}
 }
+
+// CRUD
 
 func (r *AuthorRepository) Create(a *domain.Author) (*domain.Author, error) {
 	m := authorDomainToModel(a)
