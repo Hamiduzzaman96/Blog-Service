@@ -25,9 +25,9 @@ func (s *Service) Generate(userID uint, role string) (string, error) {
 		"exp":     time.Now().Add(s.ttl).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims) /*
-				1. JWT header + payload বানাচ্ছে
-		        2. Payload হিসেবে claims ব্যবহার করছে
-		        3. Sign করার জন্য signing method নির্ধারণ করছে
+				1. JWT header + payload বানানো হয়েছে
+		        2. Payload হিসেবে claims ব্যবহার করা হয়েছে
+		        3. Sign করার জন্য signing method নির্ধারণ করা হয়েছে
 				HS256 = HMAC SHA-256 (symmetric)Symmetric Key মানে:same secret দিয়ে sign ও verify হয়*/
 	return token.SignedString([]byte(s.secret))
 }
