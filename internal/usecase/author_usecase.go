@@ -22,7 +22,7 @@ func NewAuthorUsecase(
 	}
 }
 
-func (a *AuthorUsecase) PromoteToAuthor(userID uint) error {
+func (a *AuthorUsecase) BecomeAuthor(userID uint, name string) error {
 	user, err := a.userRepo.FindByID(userID)
 	if err != nil {
 		return err
