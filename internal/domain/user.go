@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+const (
+	RoleUser   = "USER"
+	RoleAuthor = "AUTHOR"
+)
+
 type User struct {
 	ID       uint
 	Email    string
@@ -23,12 +28,12 @@ func NewUser(email, password string) (*User, error) {
 	u := &User{
 		Email:    email,
 		Password: password,
-		Role:     "USER",
+		Role:     RoleUser,
 	}
 
 	return u, nil
 }
 
 func (u *User) PromoteToAuthor() {
-	u.Role = "Author"
+	u.Role = RoleAuthor
 }
