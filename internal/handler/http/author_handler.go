@@ -22,7 +22,7 @@ func (h *AuthorHandler) BecomeAuthor(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
-	err := h.usecase.BecomeAuthor(userID, req.Name)
+	err := h.usecase.BecomeAuthor(userID)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
