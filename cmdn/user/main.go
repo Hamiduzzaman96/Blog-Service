@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/Hamiduzzaman96/Blog-Service/config"
-	pkgJWT "github.com/Hamiduzzaman96/Blog-Service/pkg/jwt"
-	pkgRedis "github.com/Hamiduzzaman96/Blog-Service/pkg/redis"
+	"github.com/Hamiduzzaman96/Blog-Service/pkg/jwt"
+	"github.com/Hamiduzzaman96/Blog-Service/pkg/redis"
 	"github.com/Hamiduzzaman96/Blog-Service/proto/userpb"
 
 	grpcHandler "github.com/Hamiduzzaman96/Blog-Service/internal/handler/grpc"
@@ -47,13 +47,13 @@ func main() {
 		log.Fatalf("failed to migrate User table: %v", err)
 	}
 
-	redisClient, err := pkgRedis.New(cfg.Redis.Host+":"+cfg.Redis.Port, cfg.Redis.Password, cfg.Redis.DB, 2*time.Hour)
+	redisClient, err := redis.New(cfg.Redis.Host+":"+cfg.Redis.Port, cfg.Redis.Password, cfg.Redis.DB, 2*time.Hour)
 	if err != nil {
 		log.Fatalf("failed to connect redis: %v", err)
 	}
 	defer redisClient.Close()
 
-	jwtSvc := pkgJWT.NewService(cfg.JWT.Secret, cfg.JWT.AccessTokenExp, cfg.JWT.RefreshTokenExp)
+	jwtSvc := jwt.NewService(cfg.JWT.Secret, cfg.JWT.AccessTokenExp, cfg.JWT.RefreshTokenExp)
 
 	userUsecase := usecase.NewUserUsecase(userRepo, jwtSvc, redisClient)
 
