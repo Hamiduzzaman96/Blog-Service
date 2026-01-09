@@ -73,11 +73,13 @@ func main() {
 		}
 	}()
 
-	userHTTPHandler := httpHandler.NewUserHandler(userUsecase)
-
 	mux := http.NewServeMux()
-	mux.HandleFunc("/register", userHTTPHandler.Register)
-	mux.HandleFunc("/login", userHTTPHandler.Login)
+	authorHTTPHandler := httpHandler.NewUserHandler(userUsecase)
+	authMiddleware := httpHandler.NewAuthMiddleware(jwtSvc)
+
+	// Become Author route with auth middleware
+	mux.Handle("/register", authMiddleware.RequireAuth(http.HandlerFunc(authorHTTPHandler.Register)))
+	mux.Handle("/login", authMiddleware.RequireAuth(http.HandlerFunc(authorHTTPHandler.Login)))
 
 	httpServer := &http.Server{
 		Addr:    cfg.UserService.HTTPPort,

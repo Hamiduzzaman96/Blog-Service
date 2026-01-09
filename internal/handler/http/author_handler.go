@@ -11,7 +11,7 @@ type AuthorHandler struct {
 	usecase *usecase.AuthorUsecase
 }
 
-func NewAuthorUsecase(u *usecase.AuthorUsecase) *AuthorHandler {
+func NewAuthorHandler(u *usecase.AuthorUsecase) *AuthorHandler {
 	return &AuthorHandler{usecase: u}
 }
 
