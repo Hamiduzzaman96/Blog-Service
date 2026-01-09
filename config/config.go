@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 	"strconv"
 
@@ -62,72 +61,80 @@ type Config struct {
 	LogLevel            string
 }
 
-// Load reads .env and returns Config struct
+// Load reads .env and environment variables
 func Load() *Config {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, reading from environment variables")
-	}
+	_ = godotenv.Load() // ignore error, env variables may be used
 
 	cfg := &Config{
 		AppName: os.Getenv("APP_NAME"),
-		AppEnv:  os.Getenv("APP_ENV"),
+		AppEnv:  getEnv("APP_ENV", "development"),
 		UserService: ServiceConfig{
-			HTTPPort: os.Getenv("USER_SERVICE_HTTP_PORT"),
-			GRPCPort: os.Getenv("USER_SERVICE_GRPC_PORT"),
+			HTTPPort: getEnv("USER_SERVICE_HTTP_PORT", ":8001"),
+			GRPCPort: getEnv("USER_SERVICE_GRPC_PORT", ":50051"),
 		},
 		AuthorService: ServiceConfig{
-			HTTPPort: os.Getenv("AUTHOR_SERVICE_HTTP_PORT"),
-			GRPCPort: os.Getenv("AUTHOR_SERVICE_GRPC_PORT"),
+			HTTPPort: getEnv("AUTHOR_SERVICE_HTTP_PORT", ":8002"),
+			GRPCPort: getEnv("AUTHOR_SERVICE_GRPC_PORT", ":50052"),
 		},
 		BlogService: ServiceConfig{
-			HTTPPort: os.Getenv("BLOG_SERVICE_HTTP_PORT"),
-			GRPCPort: os.Getenv("BLOG_SERVICE_GRPC_PORT"),
+			HTTPPort: getEnv("BLOG_SERVICE_HTTP_PORT", ":8003"),
+			GRPCPort: getEnv("BLOG_SERVICE_GRPC_PORT", ":50053"),
 		},
 		NotificationService: ServiceConfig{
-			HTTPPort: os.Getenv("NOTIFICATION_SERVICE_HTTP_PORT"),
-			GRPCPort: os.Getenv("NOTIFICATION_SERVICE_GRPC_PORT"),
+			HTTPPort: getEnv("NOTIFICATION_SERVICE_HTTP_PORT", ":8004"),
+			GRPCPort: getEnv("NOTIFICATION_SERVICE_GRPC_PORT", ":50054"),
 		},
 		Postgres: PostgresConfig{
-			Host:     os.Getenv("POSTGRES_HOST"),
-			Port:     os.Getenv("POSTGRES_PORT"),
-			User:     os.Getenv("POSTGRES_USER"),
-			Password: os.Getenv("POSTGRES_PASSWORD"),
-			DB:       os.Getenv("POSTGRES_DB"),
-			SSLMode:  os.Getenv("POSTGRES_SSLMODE"),
+			Host:     getEnv("POSTGRES_HOST", "localhost"),
+			Port:     getEnv("POSTGRES_PORT", "5432"),
+			User:     getEnv("POSTGRES_USER", "postgres"),
+			Password: getEnv("POSTGRES_PASSWORD", "postgres"),
+			DB:       getEnv("POSTGRES_DB", "blog-service"),
+			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
 		},
 		JWT: JWTConfig{
-			Secret:          os.Getenv("JWT_SECRET"),
-			AccessTokenExp:  mustAtoi(os.Getenv("JWT_ACCESS_TOKEN_EXP_MIN")),
-			RefreshTokenExp: mustAtoi(os.Getenv("JWT_REFRESH_TOKEN_EXP_DAY")),
+			Secret:          getEnv("JWT_SECRET", "ramim12345ramim12345"),
+			AccessTokenExp:  getEnvAsInt("JWT_ACCESS_TOKEN_EXP_MIN", 15),
+			RefreshTokenExp: getEnvAsInt("JWT_REFRESH_TOKEN_EXP_DAY", 7),
 		},
 		Redis: RedisConfig{
-			Host:     os.Getenv("REDIS_HOST"),
-			Port:     os.Getenv("REDIS_PORT"),
-			Password: os.Getenv("REDIS_PASSWORD"),
-			DB:       mustAtoi(os.Getenv("REDIS_DB")),
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getEnvAsInt("REDIS_DB", 0),
 		},
 		RabbitMQ: RabbitMQConfig{
-			Host:                  os.Getenv("RABBITMQ_HOST"),
-			Port:                  os.Getenv("RABBITMQ_PORT"),
-			User:                  os.Getenv("RABBITMQ_USER"),
-			Password:              os.Getenv("RABBITMQ_PASSWORD"),
-			Exchange:              os.Getenv("RABBITMQ_EXCHANGE"),
-			ExchangeType:          os.Getenv("RABBITMQ_EXCHANGE_TYPE"),
-			BlogCreatedRoutingKey: os.Getenv("RABBITMQ_BLOG_CREATED_ROUTING_KEY"),
-			NotificationQueue:     os.Getenv("RABBITMQ_NOTIFICATION_QUEUE"),
+			Host:                  getEnv("RABBITMQ_HOST", "localhost"),
+			Port:                  getEnv("RABBITMQ_PORT", "5672"),
+			User:                  getEnv("RABBITMQ_USER", "guest"),
+			Password:              getEnv("RABBITMQ_PASSWORD", "guest"),
+			Exchange:              getEnv("RABBITMQ_EXCHANGE", "blog.events"),
+			ExchangeType:          getEnv("RABBITMQ_EXCHANGE_TYPE", "topic"),
+			BlogCreatedRoutingKey: getEnv("RABBITMQ_BLOG_CREATED_ROUTING_KEY", "blog.created"),
+			NotificationQueue:     getEnv("RABBITMQ_NOTIFICATION_QUEUE", "notification.queue"),
 		},
-		GRPCTimeoutSec: mustAtoi(os.Getenv("GRPC_TIMEOUT_SEC")),
-		GRPCRetryCount: mustAtoi(os.Getenv("GRPC_RETRY_COUNT")),
-		LogLevel:       os.Getenv("LOG_LEVEL"),
+		GRPCTimeoutSec: getEnvAsInt("GRPC_TIMEOUT_SEC", 3),
+		GRPCRetryCount: getEnvAsInt("GRPC_RETRY_COUNT", 3),
+		LogLevel:       getEnv("LOG_LEVEL", "debug"),
 	}
 
 	return cfg
 }
 
-func mustAtoi(val string) int {
-	i, err := strconv.Atoi(val)
-	if err != nil {
-		log.Fatalf("Invalid integer value: %s", val)
+// helpers
+
+func getEnv(key, defaultVal string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
 	}
-	return i
+	return defaultVal
+}
+
+func getEnvAsInt(key string, defaultVal int) int {
+	if val := os.Getenv(key); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			return i
+		}
+	}
+	return defaultVal
 }
