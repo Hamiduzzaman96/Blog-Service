@@ -11,13 +11,13 @@ type UserHandler struct {
 	usecase *usecase.UserUsecase
 }
 
-func NewUserusecase(u *usecase.UserUsecase) *UserHandler {
+func NewUserHandler(u *usecase.UserUsecase) *UserHandler {
 	return &UserHandler{
 		usecase: u,
 	}
 }
 
-func (h *UserHandler) Register(w http.ResponseWriter, r http.Request) {
+func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`

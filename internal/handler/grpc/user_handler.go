@@ -12,7 +12,7 @@ type UserHandler struct {
 	usecase *usecase.UserUsecase
 }
 
-func NewUserhandler(u *usecase.UserUsecase) *UserHandler {
+func NewUserHandler(u *usecase.UserUsecase) *UserHandler {
 	return &UserHandler{usecase: u}
 }
 

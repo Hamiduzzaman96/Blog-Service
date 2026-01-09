@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -9,31 +10,87 @@ import (
 
 type Client struct {
 	rdb *redis.Client
+	ttl time.Duration
 }
 
-func New(addr, password string, db int) *Client {
-	rdb := redis.NewClient(&redis.Options{ //for configuration setup
-		Addr:     addr,     //Redis server host + port
-		Password: password, //Redis password (empty string if no password)
-		DB:       db,       //Database number (0 default)
+func New(
+	addr string,
+	password string,
+	db int,
+	ttl time.Duration,
+) (*Client, error) {
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       db,
 	})
 
-	return &Client{rdb: rdb}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		rdb: rdb,
+		ttl: ttl,
+	}, nil
 }
+
+// ------------------------------------
+// Token Store
+// ------------------------------------
 func (c *Client) SetToken(token string, userID uint) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	return c.rdb.Set(ctx, token, userID, time.Hour).Err()
+	key := c.tokenKey(token)
+
+	return c.rdb.Set(ctx, key, userID, c.ttl).Err()
 }
 
-func (c *Client) ValidateToken(token string) (bool, error) {
+// ------------------------------------
+// Token Validation
+// ------------------------------------
+func (c *Client) ValidateToken(token string) (uint, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	_, err := c.rdb.Get(ctx, token).Result()
+	key := c.tokenKey(token)
+
+	val, err := c.rdb.Get(ctx, key).Uint64()
 	if err == redis.Nil {
-		return false, nil
+		return 0, false, nil
 	}
-	return err == nil, err
+	if err != nil {
+		return 0, false, err
+	}
+
+	return uint(val), true, nil
+}
+
+// ------------------------------------
+// Token Revoke (Logout)
+// ------------------------------------
+func (c *Client) RevokeToken(token string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	return c.rdb.Del(ctx, c.tokenKey(token)).Err()
+}
+
+// ------------------------------------
+// Helpers
+// ------------------------------------
+func (c *Client) tokenKey(token string) string {
+	return fmt.Sprintf("auth:token:%s", token)
+}
+
+// ------------------------------------
+// Close
+// ------------------------------------
+func (c *Client) Close() error {
+	return c.rdb.Close()
 }

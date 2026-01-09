@@ -1,52 +1,71 @@
 package jwt
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type Service struct {
-	secret string
-	ttl    time.Duration
+	secret          string
+	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
 }
 
-func New(secret string, ttl time.Duration) *Service {
+func NewService(secret string, accessExpMin int, refreshExpDay int) *Service {
 	return &Service{
-		secret: secret,
-		ttl:    ttl,
+		secret:          secret,
+		accessTokenTTL:  time.Duration(accessExpMin) * time.Minute,
+		refreshTokenTTL: time.Duration(refreshExpDay) * 24 * time.Hour,
 	}
 }
 
-func (s *Service) Generate(userID uint, role string) (string, error) {
-	claims := jwt.MapClaims{ //payload
+// -------------------------------
+// Access Token
+// -------------------------------
+func (s *Service) GenerateAccessToken(userID uint, role string) (string, error) {
+	return s.generateToken(userID, role, s.accessTokenTTL)
+}
+
+// -------------------------------
+// Refresh Token
+// -------------------------------
+func (s *Service) GenerateRefreshToken(userID uint, role string) (string, error) {
+	return s.generateToken(userID, role, s.refreshTokenTTL)
+}
+
+func (s *Service) generateToken(userID uint, role string, ttl time.Duration) (string, error) {
+	claims := jwt.MapClaims{
 		"user_id": userID,
 		"role":    role,
-		"exp":     time.Now().Add(s.ttl).Unix(),
+		"exp":     time.Now().Add(ttl).Unix(),
+		"iat":     time.Now().Unix(),
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims) /*
-				1. JWT header + payload বানানো হয়েছে
-		        2. Payload হিসেবে claims ব্যবহার করা হয়েছে
-		        3. Sign করার জন্য signing method নির্ধারণ করা হয়েছে
-				HS256 = HMAC SHA-256 (symmetric)Symmetric Key মানে:same secret দিয়ে sign ও verify হয়*/
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.secret))
 }
 
+// -------------------------------
+// Validate Token
+// -------------------------------
 func (s *Service) Validate(tokenStr string) (*jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
 		return []byte(s.secret), nil
 	})
-	/*
-	   jwt.Parse(tokenStr, keyFunc) → JWT decode + verify
-	   keyFunc → Secret key provide করে backend কে verify করার জন্য
-	   t *jwt.Token → parsed token object (header + payload)
-	   return []byte(s.secret), nil → symmetric key provide করা HS256 signature check এর জন্য
-	*/
 
 	if err != nil || !token.Valid {
-		return nil, err
+		return nil, errors.New("invalid token")
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid claims")
+	}
+
 	return &claims, nil
 }

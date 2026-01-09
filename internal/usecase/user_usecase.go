@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/Hamiduzzaman96/Blog-Service/internal/domain"
 	"github.com/Hamiduzzaman96/Blog-Service/internal/repository"
@@ -16,6 +17,7 @@ type UserUsecase struct {
 	redis    *redis.Client
 }
 
+// Constructor
 func NewUserUsecase(
 	userRepo *repository.UserRepository,
 	jwtSvc *jwt.Service,
@@ -28,48 +30,71 @@ func NewUserUsecase(
 	}
 }
 
-// Register
-
+// Register new user
 func (u *UserUsecase) Register(email, password string) (*domain.User, error) {
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	if err != nil {
-		return nil, err
-	}
+	// Domain-level validation
 	user, err := domain.NewUser(email, password)
 	if err != nil {
 		return nil, err
 	}
 
+	// Hash password
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
 	user.Password = string(hash)
-	return u.userRepo.Create(user, string(hash))
+
+	// Persist
+	createdUser, err := u.userRepo.Create(user, user.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return createdUser, nil
 }
 
-// Login
-
+// Login user and return JWT token
 func (u *UserUsecase) Login(email, password string) (string, error) {
+	// Fetch user
 	userModel, err := u.userRepo.FindByEmail(email)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("user not found: %w", err)
 	}
 
-	// password verification
-
-	if err := bcrypt.CompareHashAndPassword(
-		[]byte(userModel.Password),
-		[]byte(password),
-	); err != nil {
-		return "", errors.New("Invalid creditials")
+	// Verify password
+	if err := bcrypt.CompareHashAndPassword([]byte(userModel.Password), []byte(password)); err != nil {
+		return "", errors.New("invalid credentials")
 	}
 
-	token, err := u.jwtSvc.Generate(userModel.ID, userModel.Role)
+	// Generate JWT token
+	token, err := u.jwtSvc.GenerateAccessToken(userModel.ID, userModel.Role)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to generate token: %w", err)
 	}
 
+	// Store token in Redis
 	if err := u.redis.SetToken(token, userModel.ID); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to store token in redis: %w", err)
 	}
 
 	return token, nil
+}
+
+// Promote user to Author
+func (u *UserUsecase) PromoteToAuthor(userID uint) error {
+	user, err := u.userRepo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+
+	if user.Role == domain.RoleAuthor {
+		return errors.New("already an author")
+	}
+
+	// Apply domain-level business rule
+	user.PromoteToAuthor()
+
+	// Persist update
+	return u.userRepo.Update(user)
 }

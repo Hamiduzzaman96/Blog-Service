@@ -8,6 +8,13 @@ import (
 	"github.com/Hamiduzzaman96/Blog-Service/pkg/jwt"
 )
 
+type ctxKey string
+
+const (
+	ctxUserID ctxKey = "user_id"
+	ctxRole   ctxKey = "role"
+)
+
 type AuthMiddleware struct {
 	jwtSvc *jwt.Service
 }
@@ -24,23 +31,24 @@ func (a *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		token := strings.TrimPrefix(auth, "Bearer")
+		token := strings.TrimPrefix(auth, "Bearer ")
 		claims, err := a.jwtSvc.Validate(token)
 		if err != nil {
 			http.Error(w, "invalid token", http.StatusUnauthorized)
 			return
 		}
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "user_id", uint((*claims)["user_id"].(float64)))
-		ctx = context.WithValue(ctx, "role", (*claims)["role"].(string))
+
+		ctx := context.WithValue(r.Context(), ctxUserID, uint((*claims)["user_id"].(float64)))
+		ctx = context.WithValue(ctx, ctxRole, (*claims)["role"].(string))
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func (a *AuthMiddleware) RequireRole(role string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rRole := r.Context().Value("role").(string)
-		if rRole != role {
+		rRole, ok := r.Context().Value(ctxRole).(string)
+		if !ok || rRole != role {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
