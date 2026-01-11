@@ -29,7 +29,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(user) //covert to json and sent to client
 }
 
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {

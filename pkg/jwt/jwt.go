@@ -21,16 +21,6 @@ func NewService(secret string, accessExpMin int, refreshExpDay int) *Service {
 	}
 }
 
-// Access Token
-func (s *Service) GenerateAccessToken(userID uint, role string) (string, error) {
-	return s.generateToken(userID, role, s.accessTokenTTL)
-}
-
-// Refresh Token
-func (s *Service) GenerateRefreshToken(userID uint, role string) (string, error) {
-	return s.generateToken(userID, role, s.refreshTokenTTL)
-}
-
 func (s *Service) generateToken(userID uint, role string, ttl time.Duration) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
@@ -41,6 +31,16 @@ func (s *Service) generateToken(userID uint, role string, ttl time.Duration) (st
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.secret))
+}
+
+// Access Token
+func (s *Service) GenerateAccessToken(userID uint, role string) (string, error) {
+	return s.generateToken(userID, role, s.accessTokenTTL)
+}
+
+// Refresh Token
+func (s *Service) GenerateRefreshToken(userID uint, role string) (string, error) {
+	return s.generateToken(userID, role, s.refreshTokenTTL)
 }
 
 // Validate Token
