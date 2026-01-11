@@ -21,16 +21,12 @@ func NewService(secret string, accessExpMin int, refreshExpDay int) *Service {
 	}
 }
 
-// -------------------------------
 // Access Token
-// -------------------------------
 func (s *Service) GenerateAccessToken(userID uint, role string) (string, error) {
 	return s.generateToken(userID, role, s.accessTokenTTL)
 }
 
-// -------------------------------
 // Refresh Token
-// -------------------------------
 func (s *Service) GenerateRefreshToken(userID uint, role string) (string, error) {
 	return s.generateToken(userID, role, s.refreshTokenTTL)
 }
@@ -47,9 +43,7 @@ func (s *Service) generateToken(userID uint, role string, ttl time.Duration) (st
 	return token.SignedString([]byte(s.secret))
 }
 
-// -------------------------------
 // Validate Token
-// -------------------------------
 func (s *Service) Validate(tokenStr string) (*jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {

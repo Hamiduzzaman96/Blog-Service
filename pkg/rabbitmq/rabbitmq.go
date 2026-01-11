@@ -59,9 +59,7 @@ func New(
 	}, nil
 }
 
-// -------------------------------
 // Publish Event
-// -------------------------------
 func (c *Client) Publish(routingKey string, payload any) error {
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -81,9 +79,7 @@ func (c *Client) Publish(routingKey string, payload any) error {
 	)
 }
 
-// -------------------------------
 // Consume Event
-// -------------------------------
 func (c *Client) Consume(
 	queue string,
 	routingKey string,
@@ -138,9 +134,7 @@ func (c *Client) Consume(
 	return nil
 }
 
-// -------------------------------
 // Close
-// -------------------------------
 func (c *Client) Close() {
 	if c.channel != nil {
 		c.channel.Close()

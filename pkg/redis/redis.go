@@ -39,9 +39,7 @@ func New(
 	}, nil
 }
 
-// ------------------------------------
 // Token Store
-// ------------------------------------
 func (c *Client) SetToken(token string, userID uint) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -51,9 +49,7 @@ func (c *Client) SetToken(token string, userID uint) error {
 	return c.rdb.Set(ctx, key, userID, c.ttl).Err()
 }
 
-// ------------------------------------
 // Token Validation
-// ------------------------------------
 func (c *Client) ValidateToken(token string) (uint, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -71,9 +67,7 @@ func (c *Client) ValidateToken(token string) (uint, bool, error) {
 	return uint(val), true, nil
 }
 
-// ------------------------------------
 // Token Revoke (Logout)
-// ------------------------------------
 func (c *Client) RevokeToken(token string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -81,16 +75,12 @@ func (c *Client) RevokeToken(token string) error {
 	return c.rdb.Del(ctx, c.tokenKey(token)).Err()
 }
 
-// ------------------------------------
 // Helpers
-// ------------------------------------
 func (c *Client) tokenKey(token string) string {
 	return fmt.Sprintf("auth:token:%s", token)
 }
 
-// ------------------------------------
 // Close
-// ------------------------------------
 func (c *Client) Close() error {
 	return c.rdb.Close()
 }

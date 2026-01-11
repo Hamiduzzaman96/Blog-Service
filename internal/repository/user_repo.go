@@ -49,7 +49,7 @@ func (r *UserRepository) Create(u *domain.User, password string) (*domain.User, 
 }
 
 func (r *UserRepository) FindByID(id uint) (*domain.User, error) {
-	var m UserModel
+	var m UserModel // local user model declare
 	if err := r.db.First(&m, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user not found")
@@ -71,7 +71,7 @@ func (r *UserRepository) FindByEmail(email string) (*domain.User, error) {
 }
 
 func (r *UserRepository) Update(u *domain.User) error {
-	return r.db.Model(&UserModel{}).Where("id = ?", u.ID).Updates(map[string]interface{}{
+	return r.db.Model(&UserModel{}).Where("id = ?", u.ID).Updates(map[string]any{
 		"email": u.Email,
 		"role":  u.Role,
 	}).Error
