@@ -16,7 +16,6 @@ func NewAuthMiddleware(jwtSvc *jwt.Service) *AuthMiddleware {
 	return &AuthMiddleware{jwtService: jwtSvc}
 }
 
-// RequireAuth middleware
 func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenStr := r.Header.Get("Authorization")
@@ -43,20 +42,15 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		// Add user_id to request context
+		role, ok := (*claims)["role"].(string)
+		if !ok {
+			http.Error(w, "role not found in token", http.StatusUnauthorized)
+			return
+		}
+
 		ctx := context.WithValue(r.Context(), "user_id", uint(userIDFloat))
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
+		ctx = context.WithValue(ctx, "user_role", role)
 
-func JWTContextMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		// Normally token parse করে user_id বের হবে
-		// এখন hardcoded for safety
-		var userID uint = 1
-
-		ctx := context.WithValue(r.Context(), "user_id", userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

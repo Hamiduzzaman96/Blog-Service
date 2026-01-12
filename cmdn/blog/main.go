@@ -17,6 +17,7 @@ import (
 	"github.com/Hamiduzzaman96/Blog-Service/internal/middleware"
 	"github.com/Hamiduzzaman96/Blog-Service/internal/repository"
 	"github.com/Hamiduzzaman96/Blog-Service/internal/usecase"
+	"github.com/Hamiduzzaman96/Blog-Service/pkg/jwt"
 	"github.com/Hamiduzzaman96/Blog-Service/pkg/rabbitmq"
 	"github.com/Hamiduzzaman96/Blog-Service/proto/blogpb"
 	"google.golang.org/grpc"
@@ -89,13 +90,14 @@ func main() {
 			log.Fatalf("gRPC server failed: %v", err)
 		}
 	}()
-
+	jwtSvc := jwt.NewService(cfg.JWT.Secret, cfg.JWT.AccessTokenExp, cfg.JWT.RefreshTokenExp)
 	mux := http.NewServeMux()
 	blogHTTPHandler := httpHandler.NewBolgHandler(blogUsecase)
+	authMiddleware := middleware.NewAuthMiddleware(jwtSvc)
 
 	mux.Handle(
 		"/blog/create",
-		middleware.JWTContextMiddleware(http.HandlerFunc(blogHTTPHandler.CreatePost)),
+		authMiddleware.RequireAuth(http.HandlerFunc(blogHTTPHandler.CreatePost)),
 	)
 
 	httpServer := &http.Server{
