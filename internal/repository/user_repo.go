@@ -22,9 +22,10 @@ func (r *UserRepository) Migrate() error {
 // Mapper //DB ---> Domain
 func toDomainUser(m *UserModel) *domain.User {
 	return &domain.User{
-		ID:    m.ID,
-		Email: m.Email,
-		Role:  m.Role,
+		ID:       m.ID,
+		Email:    m.Email,
+		Password: m.Password,
+		Role:     m.Role,
 	}
 }
 

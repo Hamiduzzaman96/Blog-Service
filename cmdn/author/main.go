@@ -14,6 +14,7 @@ import (
 	"github.com/Hamiduzzaman96/Blog-Service/config"
 	grpcHandler "github.com/Hamiduzzaman96/Blog-Service/internal/handler/grpc"
 	httpHandler "github.com/Hamiduzzaman96/Blog-Service/internal/handler/http"
+	"github.com/Hamiduzzaman96/Blog-Service/internal/middleware"
 	"github.com/Hamiduzzaman96/Blog-Service/internal/repository"
 	"github.com/Hamiduzzaman96/Blog-Service/internal/usecase"
 	"github.com/Hamiduzzaman96/Blog-Service/pkg/jwt"
@@ -24,14 +25,10 @@ import (
 )
 
 func main() {
-	// Load Config
 	cfg := config.Load()
-
-	// Signal context for graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// PostgreSQL Connection
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Postgres.Host,
@@ -46,25 +43,18 @@ func main() {
 		log.Fatalf("failed to connect database: %v", err)
 	}
 
-	// Repositories
 	userRepo := repository.NewUserRepository(db)
 	authorRepo := repository.NewAuthorRepository(db)
 
-	// Auto migrate
 	if err := userRepo.Migrate(); err != nil {
 		log.Fatalf("failed to migrate User table: %v", err)
 	}
 	if err := authorRepo.Migrate(); err != nil {
 		log.Fatalf("failed to migrate Author table: %v", err)
 	}
-
-	// JWT Service
 	jwtSvc := jwt.NewService(cfg.JWT.Secret, cfg.JWT.AccessTokenExp, cfg.JWT.RefreshTokenExp)
-
-	// Usecases
 	authorUsecase := usecase.NewAuthorUsecase(userRepo, authorRepo)
 
-	// gRPC Server
 	grpcServer := grpc.NewServer()
 	authorGRPCHandler := grpcHandler.NewAuthorHandler(authorUsecase)
 	authorpb.RegisterAuthorServiceServer(grpcServer, authorGRPCHandler)
@@ -80,12 +70,10 @@ func main() {
 		}
 	}()
 
-	// HTTP Server
 	mux := http.NewServeMux()
 	authorHTTPHandler := httpHandler.NewAuthorHandler(authorUsecase)
-	authMiddleware := httpHandler.NewAuthMiddleware(jwtSvc)
+	authMiddleware := middleware.NewAuthMiddleware(jwtSvc)
 
-	// Become Author route with auth middleware
 	mux.Handle("/become-author", authMiddleware.RequireAuth(http.HandlerFunc(authorHTTPHandler.BecomeAuthor)))
 
 	httpServer := &http.Server{
@@ -100,7 +88,6 @@ func main() {
 		}
 	}()
 
-	// Wait for termination
 	<-ctx.Done()
 	stop()
 	log.Println("Shutting down Author service...")

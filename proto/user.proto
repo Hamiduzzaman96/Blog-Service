@@ -16,7 +16,7 @@ message RegisterRequest{
 }
  message LoginRequest{
     string email = 1;
-    string pasword= 2;
+    string password= 2;
  }
 
 message GetByIDRequest{

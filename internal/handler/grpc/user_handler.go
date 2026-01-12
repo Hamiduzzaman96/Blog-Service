@@ -29,7 +29,7 @@ func (h *UserHandler) Register(ctx context.Context, req *userpb.RegisterRequest)
 }
 
 func (h *UserHandler) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.LoginResponse, error) {
-	token, err := h.usecase.Login(req.Email, req.Pasword)
+	token, err := h.usecase.Login(req.Email, req.Password)
 	if err != nil {
 		return nil, err
 	}

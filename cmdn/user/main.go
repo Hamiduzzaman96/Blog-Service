@@ -17,6 +17,7 @@ import (
 
 	grpcHandler "github.com/Hamiduzzaman96/Blog-Service/internal/handler/grpc"
 	httpHandler "github.com/Hamiduzzaman96/Blog-Service/internal/handler/http"
+	"github.com/Hamiduzzaman96/Blog-Service/internal/middleware"
 	"github.com/Hamiduzzaman96/Blog-Service/internal/repository"
 	"github.com/Hamiduzzaman96/Blog-Service/internal/usecase"
 
@@ -28,6 +29,7 @@ import (
 
 func main() {
 	cfg := config.Load()
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -37,6 +39,7 @@ func main() {
 		" dbname=" + cfg.Postgres.DB +
 		" port=" + cfg.Postgres.Port +
 		" sslmode=" + cfg.Postgres.SSLMode
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("failed to connect postgres: %v", err)
@@ -74,17 +77,18 @@ func main() {
 	}()
 
 	mux := http.NewServeMux()
-	authorHTTPHandler := httpHandler.NewUserHandler(userUsecase)
-	authMiddleware := httpHandler.NewAuthMiddleware(jwtSvc)
+	userHTTPHandler := httpHandler.NewUserHandler(userUsecase)
+	authMiddleware := middleware.NewAuthMiddleware(jwtSvc)
 
-	// Become Author route with auth middleware
-	mux.Handle("/register", authMiddleware.RequireAuth(http.HandlerFunc(authorHTTPHandler.Register)))
-	mux.Handle("/login", authMiddleware.RequireAuth(http.HandlerFunc(authorHTTPHandler.Login)))
+	mux.Handle("/register", http.HandlerFunc(userHTTPHandler.Register))
+	mux.Handle("/login", http.HandlerFunc(userHTTPHandler.Login))
+	mux.Handle("/promote", authMiddleware.RequireAuth(http.HandlerFunc(userHTTPHandler.PromoteToAuthor)))
 
 	httpServer := &http.Server{
 		Addr:    cfg.UserService.HTTPPort,
 		Handler: mux,
 	}
+
 	go func() {
 		log.Printf("User HTTP listening at %s", cfg.UserService.HTTPPort)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -101,6 +105,7 @@ func main() {
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("HTTP shutdown failed: %v", err)
 	}
+
 	grpcServer.GracefulStop()
 	log.Println("User service stopped")
 }

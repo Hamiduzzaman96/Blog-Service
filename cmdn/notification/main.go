@@ -26,7 +26,6 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// Context for graceful shutdown
 	ctx, cancel := signal.NotifyContext(
 		context.Background(),
 		os.Interrupt,
@@ -34,7 +33,6 @@ func main() {
 	)
 	defer cancel()
 
-	// Postgres
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		cfg.Postgres.Host, cfg.Postgres.User, cfg.Postgres.Password,
@@ -45,18 +43,14 @@ func main() {
 		log.Fatalf("failed to connect postgres: %v", err)
 	}
 
-	// Repositories
 	notifRepo := repository.NewNotificationRepository(db)
 
-	// Migrate Notification table
 	if err := notifRepo.Migrate(); err != nil {
 		log.Fatalf("failed to migrate Notification table: %v", err)
 	}
 
-	// Usecase
 	notifUsecase := usecase.NewNotificationUsecase(notifRepo)
 
-	// gRPC Server
 	grpcServer := grpc.NewServer()
 	notifGRPCHandler := grpcHandler.NewNotificationHandler(notifUsecase)
 	notificationpb.RegisterNotificationServiceServer(grpcServer, notifGRPCHandler)
@@ -73,11 +67,9 @@ func main() {
 		}
 	}()
 
-	// HTTP Server
 	mux := http.NewServeMux()
 	notifHTTPHandler := httpHandler.NewNotificationHandler(notifUsecase)
 
-	// Routes
 	mux.Handle("/send-notification", http.HandlerFunc(notifHTTPHandler.SendNotification))
 
 	httpServer := &http.Server{
@@ -92,7 +84,6 @@ func main() {
 		}
 	}()
 
-	// Graceful shutdown
 	<-ctx.Done()
 	cancel()
 	log.Println("Shutting down Notification Service...")

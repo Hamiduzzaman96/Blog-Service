@@ -14,6 +14,7 @@ import (
 	"github.com/Hamiduzzaman96/Blog-Service/config"
 	grpcHandler "github.com/Hamiduzzaman96/Blog-Service/internal/handler/grpc"
 	httpHandler "github.com/Hamiduzzaman96/Blog-Service/internal/handler/http"
+	"github.com/Hamiduzzaman96/Blog-Service/internal/middleware"
 	"github.com/Hamiduzzaman96/Blog-Service/internal/repository"
 	"github.com/Hamiduzzaman96/Blog-Service/internal/usecase"
 	"github.com/Hamiduzzaman96/Blog-Service/pkg/rabbitmq"
@@ -26,34 +27,34 @@ import (
 
 func main() {
 	cfg := config.Load()
-
-	// Context + Graceful Shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// Postgres connection
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		cfg.Postgres.Host, cfg.Postgres.User, cfg.Postgres.Password, cfg.Postgres.DB,
-		cfg.Postgres.Port, cfg.Postgres.SSLMode,
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		cfg.Postgres.Host,
+		cfg.Postgres.User,
+		cfg.Postgres.Password,
+		cfg.Postgres.DB,
+		cfg.Postgres.Port,
+		cfg.Postgres.SSLMode,
 	)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("failed to connect postgres: %v", err)
 	}
 
-	// Repositories
 	blogRepo := repository.NewBlogRepository(db)
 	authorRepo := repository.NewAuthorRepository(db)
 
-	// Migrate
 	if err := blogRepo.Migrate(); err != nil {
-		log.Fatalf("failed to migrate Blog table: %v", err)
+		log.Fatalf("failed to migrate blog table: %v", err)
 	}
 	if err := authorRepo.Migrate(); err != nil {
-		log.Fatalf("failed to migrate Author table: %v", err)
+		log.Fatalf("failed to migrate author table: %v", err)
 	}
 
-	// RabbitMQ
 	mqClient, err := rabbitmq.New(
 		cfg.RabbitMQ.Host,
 		cfg.RabbitMQ.Port,
@@ -66,10 +67,12 @@ func main() {
 		log.Fatalf("failed to connect RabbitMQ: %v", err)
 	}
 
-	// Usecase
-	blogUsecase := usecase.NewBlogUsecase(blogRepo, authorRepo, mqClient)
+	blogUsecase := usecase.NewBlogUsecase(
+		blogRepo,
+		authorRepo,
+		mqClient,
+	)
 
-	// gRPC server
 	grpcServer := grpc.NewServer()
 	blogGRPCHandler := grpcHandler.NewBlogHandler(blogUsecase)
 	blogpb.RegisterBlogServiceServer(grpcServer, blogGRPCHandler)
@@ -79,21 +82,21 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen gRPC: %v", err)
 	}
+
 	go func() {
-		log.Printf("Blog gRPC listening at %s", cfg.BlogService.GRPCPort)
+		log.Printf("Blog gRPC listening on %s", cfg.BlogService.GRPCPort)
 		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatalf("gRPC failed: %v", err)
+			log.Fatalf("gRPC server failed: %v", err)
 		}
 	}()
 
-	// HTTP server
 	mux := http.NewServeMux()
 	blogHTTPHandler := httpHandler.NewBolgHandler(blogUsecase)
 
-	// JWT middleware only for extracting user_id from request context
-	// Blog service doesn't generate/validate tokens itself
-
-	mux.Handle("/blog/create", http.HandlerFunc(blogHTTPHandler.CreatePost))
+	mux.Handle(
+		"/blog/create",
+		middleware.JWTContextMiddleware(http.HandlerFunc(blogHTTPHandler.CreatePost)),
+	)
 
 	httpServer := &http.Server{
 		Addr:    cfg.BlogService.HTTPPort,
@@ -101,13 +104,12 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Blog HTTP listening at %s", cfg.BlogService.HTTPPort)
+		log.Printf("Blog HTTP listening on %s", cfg.BlogService.HTTPPort)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("HTTP failed: %v", err)
+			log.Fatalf("HTTP server failed: %v", err)
 		}
 	}()
 
-	// Graceful shutdown
 	<-ctx.Done()
 	log.Println("Shutting down Blog service...")
 
