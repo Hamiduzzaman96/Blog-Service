@@ -19,14 +19,14 @@ func (r *NotificationRepository) Migrate() error {
 
 // MAPPPERS
 
-func notificationModelToDomain(m *NotificationModel) *domain.Notification {
-	return &domain.Notification{
-		ID:      m.ID,
-		UserID:  m.UserID,
-		Message: m.Message,
-		Sent:    m.Sent,
-	}
-}
+// func notificationModelToDomain(m *NotificationModel) *domain.Notification {
+// 	return &domain.Notification{
+// 		ID:      m.ID,
+// 		UserID:  m.UserID,
+// 		Message: m.Message,
+// 		Sent:    m.Sent,
+// 	}
+// }
 
 func notificationDomainToModel(n *domain.Notification) *NotificationModel {
 	return &NotificationModel{
