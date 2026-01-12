@@ -32,7 +32,6 @@ func (a *AuthorUsecase) BecomeAuthor(userID uint) error {
 		return errors.New("already author")
 	}
 
-	// domain rule
 	user.PromoteToAuthor()
 
 	if err := a.userRepo.Update(user); err != nil {

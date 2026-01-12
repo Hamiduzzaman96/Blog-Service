@@ -44,6 +44,5 @@ func (b *BlogUsecase) CreatePost(userID uint, title, content string) error {
 		return err
 	}
 
-	// async event
 	return b.mq.Publish("blog.created", post)
 }

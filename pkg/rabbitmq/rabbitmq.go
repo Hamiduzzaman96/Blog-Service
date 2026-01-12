@@ -79,7 +79,6 @@ func (c *Client) Publish(routingKey string, payload any) error {
 	)
 }
 
-// Consume Event
 func (c *Client) Consume(
 	queue string,
 	routingKey string,
