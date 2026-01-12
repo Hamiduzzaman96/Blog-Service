@@ -4,7 +4,7 @@ import "time"
 
 type BlogPost struct {
 	ID        uint
-	AuhtorID  uint
+	AuthorID  uint
 	Title     string
 	Content   string
 	CreatedAt time.Time
@@ -13,7 +13,7 @@ type BlogPost struct {
 
 func NewBlogPost(authorId uint, title, content string) *BlogPost {
 	return &BlogPost{
-		AuhtorID:  authorId,
+		AuthorID:  authorId,
 		Title:     title,
 		Content:   content,
 		CreatedAt: time.Now(),

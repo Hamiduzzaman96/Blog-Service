@@ -21,21 +21,21 @@ func (r *BlogRepository) Migrate() error { //Database schema ensure
 }
 
 // MAPPERS
-func blogModelToDomain(m *BlogModel) *domain.BlogPost {
-	return &domain.BlogPost{
-		ID:        m.ID,
-		AuhtorID:  m.AuthorID,
-		Title:     m.Title,
-		Content:   m.Content,
-		CreatedAt: m.CreatedAt,
-		UpdatedAt: m.UpdatedAt,
-	}
-}
+// func blogModelToDomain(m *BlogModel) *domain.BlogPost {
+// 	return &domain.BlogPost{
+// 		ID:        m.ID,
+// 		AuthorID:  m.AuthorID,
+// 		Title:     m.Title,
+// 		Content:   m.Content,
+// 		CreatedAt: m.CreatedAt,
+// 		UpdatedAt: m.UpdatedAt,
+// 	}
+// }
 
 func blogDomainToModel(b *domain.BlogPost) *BlogModel {
 	return &BlogModel{
 		ID:       b.ID,
-		AuthorID: b.AuhtorID,
+		AuthorID: b.AuthorID,
 		Title:    b.Title,
 		Content:  b.Content,
 	}

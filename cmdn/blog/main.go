@@ -91,9 +91,9 @@ func main() {
 	blogHTTPHandler := httpHandler.NewBolgHandler(blogUsecase)
 
 	// JWT middleware only for extracting user_id from request context
-	jwtMiddleware := httpHandler.NewAuthMiddleware(nil) // Blog service doesn't generate/validate tokens itself
+	// Blog service doesn't generate/validate tokens itself
 
-	mux.Handle("/blog/create", jwtMiddleware.RequireAuth(http.HandlerFunc(blogHTTPHandler.CreatePost)))
+	mux.Handle("/blog/create", http.HandlerFunc(blogHTTPHandler.CreatePost))
 
 	httpServer := &http.Server{
 		Addr:    cfg.BlogService.HTTPPort,

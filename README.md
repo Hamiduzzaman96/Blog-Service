@@ -45,20 +45,16 @@ cd Blog-Service
 4. Install Go dependencies
 5. Run services (in separate terminals):
  ## User Service
-> cd cmd/user
-> go run main.go
+> go run ./cmdn/user
 
 ## Author Service
-> cd cmd/author
-> go run main.go
+> go run ./cmdn/author
 
 ## Blog Service
-> cd cmd/blog
-> go run main.go
+> go run ./cmdn/blog
 
 ## Notification Service
-> cd cmd/notification
-> go run main.go
+? go run ./cmdn/notification
 
 C. Services & HTTP Endpoints
 

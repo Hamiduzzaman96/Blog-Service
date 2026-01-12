@@ -34,7 +34,7 @@ func (b *BlogUsecase) CreatePost(userID uint, title, content string) error {
 	}
 
 	post := &domain.BlogPost{
-		AuhtorID:  author.ID,
+		AuthorID:  author.ID,
 		Title:     title,
 		Content:   content,
 		CreatedAt: time.Now(),

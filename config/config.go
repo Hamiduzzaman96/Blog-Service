@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 	"strconv"
 
@@ -30,8 +31,8 @@ type RedisConfig struct {
 
 type JWTConfig struct {
 	Secret          string
-	AccessTokenExp  int // minutes
-	RefreshTokenExp int // days
+	AccessTokenExp  int
+	RefreshTokenExp int
 }
 
 type RabbitMQConfig struct {
@@ -63,11 +64,14 @@ type Config struct {
 
 // Load reads .env and environment variables
 func Load() *Config {
-	_ = godotenv.Load() // ignore error, env variables may be used
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found. Using environment variables")
+	}
 
 	cfg := &Config{
 		AppName: os.Getenv("APP_NAME"),
 		AppEnv:  getEnv("APP_ENV", "development"),
+
 		UserService: ServiceConfig{
 			HTTPPort: getEnv("USER_SERVICE_HTTP_PORT", ":8001"),
 			GRPCPort: getEnv("USER_SERVICE_GRPC_PORT", ":50051"),
@@ -84,35 +88,40 @@ func Load() *Config {
 			HTTPPort: getEnv("NOTIFICATION_SERVICE_HTTP_PORT", ":8004"),
 			GRPCPort: getEnv("NOTIFICATION_SERVICE_GRPC_PORT", ":50054"),
 		},
+
 		Postgres: PostgresConfig{
-			Host:     getEnv("POSTGRES_HOST", "localhost"),
-			Port:     getEnv("POSTGRES_PORT", "5432"),
-			User:     getEnv("POSTGRES_USER", "postgres"),
-			Password: getEnv("POSTGRES_PASSWORD", "postgres"),
-			DB:       getEnv("POSTGRES_DB", "blog-service"),
+			Host:     getEnv("POSTGRES_HOST", ""),
+			Port:     getEnv("POSTGRES_PORT", ""),
+			User:     getEnv("POSTGRES_USER", ""),
+			Password: getEnv("POSTGRES_PASSWORD", ""),
+			DB:       getEnv("POSTGRES_DB", ""),
 			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable"),
 		},
-		JWT: JWTConfig{
-			Secret:          getEnv("JWT_SECRET", "ramim12345ramim12345"),
-			AccessTokenExp:  getEnvAsInt("JWT_ACCESS_TOKEN_EXP_MIN", 15),
-			RefreshTokenExp: getEnvAsInt("JWT_REFRESH_TOKEN_EXP_DAY", 7),
-		},
+
 		Redis: RedisConfig{
-			Host:     getEnv("REDIS_HOST", "localhost"),
-			Port:     getEnv("REDIS_PORT", "6379"),
+			Host:     getEnv("REDIS_HOST", ""),
+			Port:     getEnv("REDIS_PORT", ""),
 			Password: getEnv("REDIS_PASSWORD", ""),
 			DB:       getEnvAsInt("REDIS_DB", 0),
 		},
-		RabbitMQ: RabbitMQConfig{
-			Host:                  getEnv("RABBITMQ_HOST", "localhost"),
-			Port:                  getEnv("RABBITMQ_PORT", "5672"),
-			User:                  getEnv("RABBITMQ_USER", "guest"),
-			Password:              getEnv("RABBITMQ_PASSWORD", "guest"),
-			Exchange:              getEnv("RABBITMQ_EXCHANGE", "blog.events"),
-			ExchangeType:          getEnv("RABBITMQ_EXCHANGE_TYPE", "topic"),
-			BlogCreatedRoutingKey: getEnv("RABBITMQ_BLOG_CREATED_ROUTING_KEY", "blog.created"),
-			NotificationQueue:     getEnv("RABBITMQ_NOTIFICATION_QUEUE", "notification.queue"),
+
+		JWT: JWTConfig{
+			Secret:          getEnv("JWT_SECRET", ""),
+			AccessTokenExp:  getEnvAsInt("JWT_ACCESS_TOKEN_EXP_MIN", 15),
+			RefreshTokenExp: getEnvAsInt("JWT_REFRESH_TOKEN_EXP_DAY", 7),
 		},
+
+		RabbitMQ: RabbitMQConfig{
+			Host:                  getEnv("RABBITMQ_HOST", ""),
+			Port:                  getEnv("RABBITMQ_PORT", ""),
+			User:                  getEnv("RABBITMQ_USER", ""),
+			Password:              getEnv("RABBITMQ_PASSWORD", ""),
+			Exchange:              getEnv("RABBITMQ_EXCHANGE", ""),
+			ExchangeType:          getEnv("RABBITMQ_EXCHANGE_TYPE", ""),
+			BlogCreatedRoutingKey: getEnv("RABBITMQ_BLOG_CREATED_ROUTING_KEY", ""),
+			NotificationQueue:     getEnv("RABBITMQ_NOTIFICATION_QUEUE", ""),
+		},
+
 		GRPCTimeoutSec: getEnvAsInt("GRPC_TIMEOUT_SEC", 3),
 		GRPCRetryCount: getEnvAsInt("GRPC_RETRY_COUNT", 3),
 		LogLevel:       getEnv("LOG_LEVEL", "debug"),
@@ -122,19 +131,18 @@ func Load() *Config {
 }
 
 // helpers
-
-func getEnv(key, defaultVal string) string {
+func getEnv(key, fallback string) string {
 	if val := os.Getenv(key); val != "" {
 		return val
 	}
-	return defaultVal
+	return fallback
 }
 
-func getEnvAsInt(key string, defaultVal int) int {
+func getEnvAsInt(key string, fallback int) int {
 	if val := os.Getenv(key); val != "" {
 		if i, err := strconv.Atoi(val); err == nil {
 			return i
 		}
 	}
-	return defaultVal
+	return fallback
 }
